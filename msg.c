@@ -20,6 +20,9 @@
 #define _GNU_SOURCE
 #endif
 #include "autotools-config.h"
+#include "sph_keccak.h"
+#include "sph_metis.h"
+#include "sph_shavite.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -320,7 +323,7 @@ return;
 static int check_hash(const char *remote_host, const char *auth_user,
 		      const char *data_str, const char **reason_out)
 {
-	unsigned char hash[SHA256_DIGEST_LENGTH], hash1[SHA256_DIGEST_LENGTH];
+	unsigned char hash[SHA256_DIGEST_LENGTH*2], hash1[SHA256_DIGEST_LENGTH*2];
 	uint32_t *hash32 = (uint32_t *) hash;
 	unsigned char data[128];
 	uint32_t *data32 = (uint32_t *) data;
@@ -340,22 +343,40 @@ static int check_hash(const char *remote_host, const char *auth_user,
 	if (*reason_out)
 		return 0;		/* work is invalid */
 
-	for (i = 0; i < 128/4; i++)
-		data32[i] = bswap_32(data32[i]);
+	//for (i = 0; i < 128/4; i++)
+	//	data32[i] = bswap_32(data32[i]);
 
-    if (srv.scrypt) {
-	    scrypt_1024_1_1_256(data, hash);
-    } else {
-	    SHA256(data, 80, hash1);
-	    SHA256(hash1, SHA256_DIGEST_LENGTH, hash);
-    }
+//    if (srv.scrypt) {
+//	    scrypt_1024_1_1_256(data, hash);
+//    } else {
+//	    SHA256(data, 80, hash1);
+//	    SHA256(hash1, SHA256_DIGEST_LENGTH, hash);
+//    }
+      // only allow metis
+        sph_keccak224_context kctx;
+        sph_shavite512_context sctx;
+        sph_metis512_context mctx;
 
-	if (hash32[7] != 0) {
-		*reason_out = "H-not-zero";
-		return 0;		/* work is invalid */
-	}
-	if (hash[27] == 0)
-		better_hash = true;
+        sph_keccak512_init(&kctx);
+        sph_keccak512(&kctx, data, 80);
+        sph_keccak512_close(&kctx, hash);
+
+        sph_shavite512_init(&sctx);
+        sph_shavite512(&sctx, hash, 64);
+        sph_shavite512_close(&sctx, hash1);
+
+        sph_metis512_init(&mctx);
+        sph_metis512(&mctx, hash1, 64);
+        sph_metis512_close(&mctx, hash);
+      
+
+//	if (hash32[7] != 0) {
+//		*reason_out = "H-not-zero";
+//		return 0;		/* work is invalid */
+//	}
+//	if (hash[27] == 0)
+// always submit, i cant compare without the target and my targets are lower than that
+	better_hash = true;
 
 	if (hist_lookup(srv.hist, hash)) {
 		*reason_out = "duplicate";
