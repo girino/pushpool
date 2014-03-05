@@ -34,7 +34,7 @@
 #include <jansson.h>
 #include "server.h"
 
-#define EASY_TARGET "ffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000"
+#define EASY_TARGET "ffffffffffffffffffffffffffffffffffffffffffffffffffffffff03000000"
 
 static char *read_commented_file(const char *fn)
 {

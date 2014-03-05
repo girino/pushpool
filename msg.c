@@ -370,13 +370,25 @@ static int check_hash(const char *remote_host, const char *auth_user,
         sph_metis512_close(&mctx, hash);
       
 
-//	if (hash32[7] != 0) {
-//		*reason_out = "H-not-zero";
-//		return 0;		/* work is invalid */
-//	}
-//	if (hash[27] == 0)
-// always submit, i cant compare without the target and my targets are lower than that
-	better_hash = true;
+	if (srv.easy_target) {
+		//compares last 2 uints should be enough
+		uint32_t t[8];
+		hex2bin(t, json_string_value(srv.easy_target), 64);
+		for(i = 7; i >= 0; i--) {
+			if (hash32[i] > t[i]) {
+				*reason_out = "NOT-ON-TARGET";
+				return 0;		/* work is invalid */
+			}
+		}
+		better_hash = true;
+	} else {
+		if (hash32[7] != 0) {
+			*reason_out = "H-not-zero";
+			return 0;		/* work is invalid */
+		}
+		if (hash[27] == 0)
+			better_hash = true;
+	}
 
 	if (hist_lookup(srv.hist, hash)) {
 		*reason_out = "duplicate";
