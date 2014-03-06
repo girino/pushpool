@@ -343,8 +343,8 @@ static int check_hash(const char *remote_host, const char *auth_user,
 	if (*reason_out)
 		return 0;		/* work is invalid */
 
-	//for (i = 0; i < 128/4; i++)
-	//	data32[i] = bswap_32(data32[i]);
+	for (i = 0; i < 128/4; i++)
+		data32[i] = bswap_32(data32[i]);
 
 //    if (srv.scrypt) {
 //	    scrypt_1024_1_1_256(data, hash);
